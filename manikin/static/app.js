@@ -212,6 +212,7 @@ async function accept() {
   // Retake is disabled too, so a slow save can't land on a newer preview.
   const buttons = [$("accept"), $("retake")];
   for (const b of buttons) b.disabled = true;
+  $("accept-error").textContent = "";
   try {
     const response = await fetch(`/api/poses/${current.id}/accept`, {
       method: "POST",

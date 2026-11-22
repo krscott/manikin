@@ -16,8 +16,6 @@ BLENDER_SCRIPT = "manikin_rigify.py"
 
 # Exit codes. The NixOS service restarts only on EXIT_RETRY.
 EXIT_RETRY = 1  # Tailscale is not up yet.
-# out_dir is not checked here: it may be on a filesystem mounted after boot, and
-# Accept reports save errors with the path and keeps the pose for a retry.
 EXIT_CONFIG = 2  # Bad settings; argparse uses 2 for usage errors too.
 EXIT_SETUP = 3  # Model weights are missing.
 
@@ -35,6 +33,8 @@ def serve(args: argparse.Namespace) -> int:
     config = _config(args)
     if config is None:
         return EXIT_CONFIG
+    # out_dir is not checked here: it may be on a filesystem mounted after boot,
+    # and Accept reports save errors with the path and keeps the pose for a retry.
 
     # Imported here so `url` and `blender-script` start without these modules.
     import uvicorn

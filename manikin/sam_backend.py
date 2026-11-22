@@ -92,6 +92,7 @@ class SamBackend:
                 # Freed outside the except block, whose traceback would keep the
                 # failed frames' tensors alive.
                 _free_gpu_memory()
+                log.warning("Out of GPU memory while estimating a pose")
                 return EstimateError(
                     "Not enough free GPU memory (manikin needs about 4 GB). "
                     "Close other GPU apps and try again."
