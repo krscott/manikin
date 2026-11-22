@@ -1,3 +1,5 @@
-from manikin.lib import greet
+"""Capture a pose from a phone photo for a Blender Rigify rig."""
 
-__all__ = ["greet"]
+from importlib.metadata import version
+
+__version__ = version("manikin")

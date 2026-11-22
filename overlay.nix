@@ -1,7 +1,8 @@
 final: prev: {
   python3 = prev.python3.override {
-    packageOverrides = _: _: {
-      manikin = prev.python3.pkgs.callPackage ./default.nix { };
+    packageOverrides = pyFinal: _: {
+      sam-3d-body = pyFinal.callPackage ./nix/sam-3d-body.nix { };
+      manikin = pyFinal.callPackage ./default.nix { };
     };
   };
 

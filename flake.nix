@@ -1,108 +1,152 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-    }:
+    { self, nixpkgs }:
     let
-      supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
-    in
-    flake-utils.lib.eachSystem supportedSystems (
-      system:
-      let
-        localOverlay = import ./overlay.nix;
+      # CUDA builds come from cache.nixos-cuda.org; see AGENTS.md before changing
+      # the system, nixpkgs config, or Python versions.
+      system = "x86_64-linux";
 
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ localOverlay ];
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ (import ./overlay.nix) ];
+        config = {
+          allowUnfree = true;
+          cudaSupport = true;
         };
+      };
 
-        pythonDev = pkgs.python3.pkgs.manikin.pythonModule.withPackages (
-          ps:
-          with ps;
-          [
-            black
-            isort
-            mypy
-            pytest
-          ]
-          ++ pkgs.manikin.propagatedBuildInputs
-          ++ pkgs.manikin.nativeBuildInputs
+      # Packages that must not be built with CUDA, to stay on cache.nixos.org.
+      plainPkgs = nixpkgs.legacyPackages.${system};
+
+      pythonMinimum = pkgs.python313.override {
+        packageOverrides = pyFinal: _: {
+          sam-3d-body = pyFinal.callPackage ./nix/sam-3d-body.nix { };
+        };
+      };
+
+      pythonDev = pkgs.python3.pkgs.manikin.pythonModule.withPackages (
+        ps:
+        with ps;
+        [
+          black
+          httpx
+          isort
+          mypy
+          pytest
+        ]
+        ++ pkgs.python3.pkgs.manikin.propagatedBuildInputs
+        ++ pkgs.python3.pkgs.manikin.nativeBuildInputs
+      );
+
+      mkApp = runtimeInputs: text: {
+        type = "app";
+        program = pkgs.lib.getExe (
+          pkgs.writeShellApplication {
+            name = "app";
+            runtimeInputs = runtimeInputs ++ [ pkgs.just ];
+            inherit text;
+          }
         );
+      };
 
-        mkApp = text: {
-          type = "app";
-          program = pkgs.lib.getExe (
-            pkgs.writeShellApplication {
-              name = "app";
-              runtimeInputs = [
-                pythonDev
-                pkgs.pyright
-                pkgs.just
+      # Formatting needs no runtime dependencies, so CI avoids downloading CUDA.
+      pythonFormat = plainPkgs.python3.withPackages (ps: [
+        ps.black
+        ps.isort
+      ]);
+    in
+    {
+      packages.${system} = {
+        inherit (pkgs) manikin;
+        default = pkgs.manikin;
+      };
+
+      # Store paths `just check-cuda-cache` expects on cache.nixos-cuda.org.
+      legacyPackages.${system}.cudaCachePaths = {
+        torch = pkgs.python3.pkgs.torch;
+        torchvision = pkgs.python3.pkgs.torchvision;
+        torch-minimum = pythonMinimum.pkgs.torch;
+        torchvision-minimum = pythonMinimum.pkgs.torchvision;
+      };
+
+      nixosModules.default = import ./nix/module.nix self;
+
+      checks.${system} = {
+        python-minimum = pythonMinimum.pkgs.callPackage ./default.nix { };
+        module =
+          let
+            nixos = nixpkgs.lib.nixosSystem {
+              inherit system;
+              modules = [
+                self.nixosModules.default
+                {
+                  services.manikin = {
+                    enable = true;
+                    user = "alice";
+                    openFirewall = true;
+                    settings.port = 9000;
+                  };
+                  boot.loader.grub.enable = false;
+                  fileSystems."/" = {
+                    device = "nodev";
+                    fsType = "tmpfs";
+                  };
+                  system.stateVersion = nixpkgs.lib.trivial.release;
+                }
               ];
-              inherit text;
+            };
+            unit = nixos.config.systemd.units."manikin.service".unit;
+            ports = nixos.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts;
+          in
+          assert ports == [ 9000 ];
+          pkgs.runCommand "manikin-module-check" { } ''
+            grep -q 'ExecStart=.*/bin/manikin --config .*manikin.toml serve' ${unit}/manikin.service
+            grep -q 'User=alice' ${unit}/manikin.service
+            touch "$out"
+          '';
+        nix-cli =
+          pkgs.runCommand "manikin-nix-cli-tests"
+            {
+              nativeBuildInputs = [ (plainPkgs.python3.withPackages (ps: [ ps.pytest ])) ];
+              MANIKIN_NIX_EXECUTABLE = "${pkgs.manikin}/bin/manikin";
             }
-          );
-        };
-      in
-      {
-        packages = {
-          inherit (pkgs) manikin;
-          default = pkgs.manikin;
-        };
-
-        checks = {
-          python-minimum = pkgs.python312.pkgs.callPackage ./default.nix { };
-          nix-cli =
-            pkgs.runCommand "manikin-nix-cli-tests"
-              {
-                nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ])) ];
-                MANIKIN_NIX_EXECUTABLE = "${pkgs.manikin}/bin/manikin";
-              }
-              ''
-                python -m pytest -c ${./pyproject.toml} ${./tests/test_nix_cli.py}
-                touch "$out"
-              '';
-        };
-
-        devShells = {
-          default = pkgs.mkShell {
-            inputsFrom = [ pkgs.manikin ];
-            nativeBuildInputs = [
-              pythonDev
-              pkgs.pyright
-              pkgs.nodejs # For missing libatomic in some environments
-            ];
-            packages = [ pkgs.python3.pkgs.venvShellHook ];
-            venvDir = ".venv";
-            postVenvCreation = ''
-              # Nix supplies dependencies and setuptools; only install this worktree's code.
-              python -m pip install --no-deps --no-build-isolation -e .
+            ''
+              python -m pytest -c ${./pyproject.toml} ${./tests/test_nix_cli.py}
+              touch "$out"
             '';
-            shellHook = ''
-              runHook venvShellHook
-              export PYTHONPATH="''${PYTHONPATH:-}:."
-            '';
-          };
-        };
+      };
 
-        apps = {
-          format = mkApp "just format";
-          lint = mkApp "just lint";
-        };
+      devShells.${system}.default = pkgs.mkShell {
+        inputsFrom = [ pkgs.python3.pkgs.manikin ];
+        nativeBuildInputs = [
+          pythonDev
+          pkgs.pyright
+          pkgs.nodejs # For missing libatomic in some environments
+        ];
+        packages = [ pkgs.python3.pkgs.venvShellHook ];
+        venvDir = ".venv";
+        postVenvCreation = ''
+          # Nix supplies dependencies and setuptools; only install this worktree's code.
+          python -m pip install --no-deps --no-build-isolation -e .
+        '';
+        shellHook = ''
+          runHook venvShellHook
+          export PYTHONPATH="''${PYTHONPATH:-}:."
+        '';
+      };
 
-        formatter = pkgs.nixfmt;
-      }
-    );
+      apps.${system} = {
+        format = mkApp [ pythonFormat ] "just format";
+        lint = mkApp [
+          pythonDev
+          pkgs.pyright
+        ] "just lint";
+      };
+
+      formatter.${system} = pkgs.nixfmt;
+    };
 }

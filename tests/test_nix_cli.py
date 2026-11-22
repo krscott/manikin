@@ -20,35 +20,32 @@ def nix_cli() -> Path:
 
 
 @pytest.fixture
-def cli_env() -> dict[str, str]:
+def cli_env(tmp_path: Path) -> dict[str, str]:
     env = os.environ.copy()
-    for name in (
-        "MANIKIN_VERBOSE",
-        "PYTHONPATH",
-        "PYTHONHOME",
-        "PYTHON_DOTENV_DISABLED",
-    ):
+    for name in ("PYTHONPATH", "PYTHONHOME"):
         env.pop(name, None)
+    env["HOME"] = str(tmp_path)
     return env
 
 
-@pytest.mark.parametrize("module", ["dotenv", "sitecustomize"])
-@pytest.mark.parametrize("args", [["--help"], ["Alice"]])
+@pytest.mark.parametrize("module", ["setproctitle", "sitecustomize"])
+@pytest.mark.parametrize("command", ["help", "blender-script"])
 def test_caller_pythonpath(
-    nix_cli: Path, cli_env: dict[str, str], tmp_path: Path, module: str, args: list[str]
+    nix_cli: Path, cli_env: dict[str, str], tmp_path: Path, module: str, command: str
 ) -> None:
     (tmp_path / f"{module}.py").write_text(
         'raise RuntimeError("Imported caller module")\n'
     )
     cli_env["PYTHONPATH"] = str(tmp_path)
+    args = ["--help"] if command == "help" else ["blender-script", str(tmp_path)]
     result = subprocess.run(
         [str(nix_cli), *args], cwd=tmp_path, env=cli_env, capture_output=True, text=True
     )
     assert result.returncode == 0, result.stderr
-    if args == ["--help"]:
+    if command == "help":
         assert "usage:" in result.stdout
     else:
-        assert result.stdout == "Hello, Alice!\n"
+        assert (tmp_path / "manikin_rigify.py").is_file()
     assert result.stderr == ""
 
 
@@ -57,35 +54,12 @@ def test_caller_pythonhome(
 ) -> None:
     cli_env["PYTHONHOME"] = str(tmp_path / "missing-python")
     result = subprocess.run(
-        [str(nix_cli)], cwd=tmp_path, env=cli_env, capture_output=True, text=True
-    )
-    assert result.returncode == 0, result.stderr
-    assert result.stdout == "Hello, World!\n"
-    assert result.stderr == ""
-
-
-@pytest.mark.parametrize("settings", ["environment", "dotenv", "override"])
-def test_application_settings(
-    nix_cli: Path, cli_env: dict[str, str], tmp_path: Path, settings: str
-) -> None:
-    (tmp_path / "dotenv.py").write_text(
-        'raise RuntimeError("Imported caller dotenv")\n'
-    )
-    cli_env["PYTHONPATH"] = str(tmp_path)
-    cli_env["PYTHONHOME"] = str(tmp_path / "missing-python")
-    if settings in {"dotenv", "override"}:
-        (tmp_path / ".env").write_text("MANIKIN_VERBOSE=1\n")
-    if settings == "environment":
-        cli_env["MANIKIN_VERBOSE"] = "1"
-    elif settings == "override":
-        cli_env["MANIKIN_VERBOSE"] = "0"
-    result = subprocess.run(
-        [str(nix_cli), "Alice"],
+        [str(nix_cli), "--version"],
         cwd=tmp_path,
         env=cli_env,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout == "Hello, Alice!\n"
-    assert result.stderr == ("" if settings == "override" else "Greeting user...\n")
+    assert result.stdout.strip()
+    assert result.stderr == ""

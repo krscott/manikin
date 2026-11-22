@@ -3,21 +3,36 @@
   lib,
   pythonOlder,
   pytestCheckHook,
-  python-dotenv,
+  numpy,
+  pillow,
+  python-multipart,
+  sam-3d-body,
+  segno,
   setproctitle,
   setuptools,
+  starlette,
+  torch,
+  uvicorn,
+  httpx,
 }:
 buildPythonPackage {
   name = "manikin";
   src = lib.cleanSource ./.;
   pyproject = true;
-  disabled = pythonOlder "3.12";
+  disabled = pythonOlder "3.13";
 
   nativeBuildInputs = [ setuptools ];
 
   propagatedBuildInputs = [
-    python-dotenv
+    numpy
+    pillow
+    python-multipart
+    sam-3d-body
+    segno
     setproctitle
+    starlette
+    torch
+    uvicorn
   ];
 
   # Isolate the CLI before Python fixup adds the packaged dependency paths.
@@ -26,18 +41,21 @@ buildPythonPackage {
   '';
 
   nativeCheckInputs = [
+    httpx
     pytestCheckHook
   ];
 
   # Skip integration tests during build (they require the installed executable)
-  disabledTestMarks = [ "integration" ];
+  disabledTestMarks = [
+    "integration"
+    "gpu"
+    "blender"
+  ];
 
-  # pythonImportsCheck = [ "manikin" ];
+  pythonImportsCheck = [ "manikin" ];
 
   meta = {
     mainProgram = "manikin";
-    # description = "A short description of my application";
-    # homepage = "https://github.com";
-    # license = lib.licenses.mit;
+    description = "Capture a pose from a phone photo for a Blender Rigify rig";
   };
 }

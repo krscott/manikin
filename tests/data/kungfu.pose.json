@@ -1,0 +1,307 @@
+{
+  "format": "manikin-pose",
+  "version": 1,
+  "manikin_version": "0.1.0",
+  "backend": "sam-3d-body-vith",
+  "bones": {
+    "pelvis": {
+      "direction": [
+        -0.192401,
+        0.238968,
+        0.951775
+      ],
+      "reference": [
+        0.0,
+        -0.969896,
+        0.243518
+      ],
+      "reference_axis": "forward"
+    },
+    "spine_0": {
+      "direction": [
+        -0.220232,
+        0.030893,
+        0.974958
+      ],
+      "reference": [
+        0.149062,
+        -0.986693,
+        0.064936
+      ],
+      "reference_axis": "forward"
+    },
+    "spine_1": {
+      "direction": [
+        -0.209555,
+        0.095655,
+        0.973107
+      ],
+      "reference": [
+        0.152104,
+        -0.9799,
+        0.129078
+      ],
+      "reference_axis": "forward"
+    },
+    "spine_2": {
+      "direction": [
+        -0.157647,
+        -0.284709,
+        0.945562
+      ],
+      "reference": [
+        0.326183,
+        -0.918804,
+        -0.22227
+      ],
+      "reference_axis": "forward"
+    },
+    "spine_3": {
+      "direction": [
+        0.015888,
+        -0.589083,
+        0.807916
+      ],
+      "reference": [
+        0.434597,
+        -0.723631,
+        -0.536175
+      ],
+      "reference_axis": "forward"
+    },
+    "neck": {
+      "direction": [
+        -0.180724,
+        -0.743868,
+        0.643428
+      ],
+      "reference": [
+        0.044485,
+        -0.659713,
+        -0.7502
+      ],
+      "reference_axis": "forward"
+    },
+    "head": {
+      "direction": [
+        -0.086966,
+        -0.360079,
+        0.92886
+      ],
+      "reference": [
+        -0.321244,
+        -0.872448,
+        -0.368288
+      ],
+      "reference_axis": "forward"
+    },
+    "shoulder.L": {
+      "direction": [
+        0.278884,
+        0.797498,
+        0.534996
+      ],
+      "reference": [
+        0.796876,
+        -0.503077,
+        0.334519
+      ],
+      "reference_axis": "forward"
+    },
+    "upper_arm.L": {
+      "direction": [
+        0.583607,
+        0.79056,
+        0.18552
+      ],
+      "reference": [
+        0.781768,
+        -0.608789,
+        0.134963
+      ],
+      "reference_axis": "forward"
+    },
+    "forearm.L": {
+      "direction": [
+        0.692136,
+        0.668232,
+        0.272788
+      ],
+      "reference": [
+        0.527284,
+        -0.726218,
+        0.441112
+      ],
+      "reference_axis": "forward"
+    },
+    "hand.L": {
+      "direction": [
+        0.417287,
+        0.826539,
+        0.377764
+      ],
+      "reference": [
+        0.564103,
+        -0.56149,
+        0.605406
+      ],
+      "reference_axis": "forward"
+    },
+    "thigh.L": {
+      "direction": [
+        0.11125,
+        -0.937105,
+        0.330844
+      ],
+      "reference": [
+        0.276179,
+        0.34895,
+        0.895522
+      ],
+      "reference_axis": "forward"
+    },
+    "shin.L": {
+      "direction": [
+        -0.295759,
+        0.31856,
+        -0.900581
+      ],
+      "reference": [
+        -0.322824,
+        -0.920623,
+        -0.219631
+      ],
+      "reference_axis": "forward"
+    },
+    "foot.L": {
+      "direction": [
+        -0.318318,
+        -0.748336,
+        -0.58195
+      ],
+      "reference": [
+        0.175843,
+        -0.649839,
+        0.739452
+      ],
+      "reference_axis": "up"
+    },
+    "toe.L": {
+      "direction": [
+        -0.535775,
+        -0.844351,
+        0.003979
+      ],
+      "reference": [
+        0.21111,
+        -0.129393,
+        0.96886
+      ],
+      "reference_axis": "up"
+    },
+    "shoulder.R": {
+      "direction": [
+        -0.997116,
+        -0.006617,
+        0.075609
+      ],
+      "reference": [
+        0.012209,
+        -0.997203,
+        0.073742
+      ],
+      "reference_axis": "forward"
+    },
+    "upper_arm.R": {
+      "direction": [
+        -0.561479,
+        -0.822538,
+        -0.090397
+      ],
+      "reference": [
+        0.821199,
+        -0.567321,
+        0.06147
+      ],
+      "reference_axis": "forward"
+    },
+    "forearm.R": {
+      "direction": [
+        -0.443461,
+        -0.895924,
+        -0.02575
+      ],
+      "reference": [
+        0.874734,
+        -0.438878,
+        0.205492
+      ],
+      "reference_axis": "forward"
+    },
+    "hand.R": {
+      "direction": [
+        -0.662269,
+        -0.748311,
+        -0.037823
+      ],
+      "reference": [
+        0.703095,
+        -0.638113,
+        0.313797
+      ],
+      "reference_axis": "forward"
+    },
+    "thigh.R": {
+      "direction": [
+        0.011745,
+        -0.186168,
+        -0.982448
+      ],
+      "reference": [
+        -0.159866,
+        -0.970227,
+        0.181941
+      ],
+      "reference_axis": "forward"
+    },
+    "shin.R": {
+      "direction": [
+        0.075557,
+        0.156666,
+        -0.984757
+      ],
+      "reference": [
+        -0.338708,
+        -0.924828,
+        -0.17312
+      ],
+      "reference_axis": "forward"
+    },
+    "foot.R": {
+      "direction": [
+        -0.206692,
+        -0.871252,
+        -0.445194
+      ],
+      "reference": [
+        -0.268345,
+        -0.387091,
+        0.882129
+      ],
+      "reference_axis": "up"
+    },
+    "toe.R": {
+      "direction": [
+        0.141308,
+        -0.989964,
+        0.001881
+      ],
+      "reference": [
+        -0.079406,
+        -0.00944,
+        0.996798
+      ],
+      "reference_axis": "up"
+    }
+  }
+}
