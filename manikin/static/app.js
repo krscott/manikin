@@ -116,7 +116,6 @@ function toThree([x, y, z]) {
 }
 
 function createViewer(container, preview) {
-  container.hidden = false; // Measure while visible; selectTab hides it again.
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   container.replaceChildren(renderer.domElement);
@@ -169,6 +168,7 @@ function createViewer(container, preview) {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   };
+  // Size and draw only while the 3D tab is visible; hidden views measure 0x0.
   const loop = () => {
     frame = requestAnimationFrame(loop);
     if (!container.hidden) {
