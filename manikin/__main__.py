@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from importlib.resources import files
 from pathlib import Path
@@ -14,6 +15,11 @@ log = logging.getLogger("manikin")
 
 BLENDER_SCRIPT = "manikin_rigify.py"
 
+# Exit codes. The NixOS service restarts only on EXIT_RETRY.
+EXIT_RETRY = 1  # Tailscale is not up yet.
+EXIT_CONFIG = 2  # Bad settings; argparse uses 2 for usage errors too.
+EXIT_SETUP = 3  # Model weights are missing.
+
 
 def main() -> None:
     setproctitle("manikin")
@@ -27,10 +33,11 @@ def main() -> None:
 def serve(args: argparse.Namespace) -> int:
     config = _config(args)
     if config is None:
-        return 2
-    listen = _listen(config)
-    if listen is None:
-        return 1
+        return EXIT_CONFIG
+    out_dir_error = _check_out_dir(config.out_dir)
+    if out_dir_error is not None:
+        print(out_dir_error, file=sys.stderr)
+        return EXIT_CONFIG
 
     # Imported here so `url` and `blender-script` start without these modules.
     import uvicorn
@@ -41,7 +48,10 @@ def serve(args: argparse.Namespace) -> int:
     weights_error = missing_weights_error(config.model_dir)
     if weights_error is not None:
         print(weights_error, file=sys.stderr)
-        return 1
+        return EXIT_SETUP
+    listen = _listen(config)
+    if listen is None:
+        return EXIT_RETRY
 
     backend = SamBackend(
         model_dir=config.model_dir, idle_timeout=config.model_idle_timeout
@@ -64,10 +74,10 @@ def url(args: argparse.Namespace) -> int:
 
     config = _config(args)
     if config is None:
-        return 2
+        return EXIT_CONFIG
     listen = _listen(config)
     if listen is None:
-        return 1
+        return EXIT_RETRY
     print(listen.url)
     segno.make(listen.url).terminal(compact=True)
     return 0
@@ -97,6 +107,16 @@ def _config(args: argparse.Namespace) -> Config | None:
         print(config.message, file=sys.stderr)
         return None
     return config
+
+
+def _check_out_dir(out_dir: Path) -> str | None:
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        return f"Cannot create out_dir {out_dir}: {e.strerror or e}"
+    if not os.access(out_dir, os.W_OK):
+        return f"out_dir {out_dir} is not writable"
+    return None
 
 
 def _listen(config: Config) -> Listen | None:

@@ -5,7 +5,9 @@ from dataclasses import dataclass
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-_EXTENSIONS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+# Pillow reports JPEGs with extra embedded images (such as HDR gain maps) as MPO;
+# the first image is the photo itself.
+_EXTENSIONS = {"JPEG": "jpg", "MPO": "jpg", "PNG": "png", "WEBP": "webp"}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -32,6 +34,8 @@ def decode_photo(data: bytes) -> Photo | PhotoError:
         return _unsupported(None)
     except Image.DecompressionBombError:
         return PhotoError("The photo has too many pixels")
+    except OSError as e:  # Truncated or corrupt image data.
+        return PhotoError(f"The photo could not be read ({e}); try taking it again")
     return Photo(data=data, extension=_EXTENSIONS[image_format], image=upright)
 
 

@@ -26,6 +26,10 @@ The user's rejection of a previewed pose. It discards the pose and asks for a ne
 What Accept writes: the original photo, the pose file, and an overlay image, kept together under one name.
 _Avoid_: export, capture, take
 
+**Character space**:
+The axes of a character at rest: +X is its left, -Y is forward, +Z is up. Poses are expressed in it.
+_Avoid_: world space, camera space
+
 **Target rig**:
 The Rigify-generated armature of a character that a saved pose is applied to.
 _Avoid_: skeleton, armature, metarig

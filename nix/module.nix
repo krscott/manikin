@@ -34,14 +34,14 @@ in
     openFirewall = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Open the port on the `tailscale0` interface only.";
+      description = "Open the port on the Tailscale interface only.";
     };
 
     settings = lib.mkOption {
       type = lib.types.submodule {
         freeformType = settingsFormat.type;
         options.port = lib.mkOption {
-          type = lib.types.port;
+          type = lib.types.ints.between 1 65535;
           default = 8471;
           description = "Port to listen on.";
         };
@@ -60,10 +60,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Shared with the CLI: `manikin --config /etc/manikin/config.toml url`.
+    environment.etc."manikin/config.toml".source = configFile;
+    environment.systemPackages = [ cfg.package ];
+
     systemd.services.manikin = {
       description = "manikin pose capture";
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
+      restartTriggers = [ configFile ];
       after = [
         "network-online.target"
         "tailscaled.service"
@@ -72,15 +77,17 @@ in
       path = [ config.services.tailscale.package ];
       serviceConfig = {
         User = cfg.user;
-        ExecStart = "${lib.getExe cfg.package} --config ${configFile} serve";
-        # Tailscale may not have an address yet at boot.
+        ExecStart = "${lib.getExe cfg.package} --config /etc/manikin/config.toml serve";
+        # Tailscale may not have an address yet at boot (exit 1). Bad settings
+        # (2) and missing model weights (3) need a person, so don't retry those.
         Restart = "on-failure";
         RestartSec = 10;
+        RestartPreventExitStatus = "2 3";
       };
     };
 
-    networking.firewall.interfaces.tailscale0.allowedTCPPorts = lib.mkIf cfg.openFirewall [
-      cfg.settings.port
-    ];
+    networking.firewall.interfaces.${config.services.tailscale.interfaceName}.allowedTCPPorts =
+      lib.mkIf cfg.openFirewall
+        [ cfg.settings.port ];
   };
 }

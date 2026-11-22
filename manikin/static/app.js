@@ -11,6 +11,10 @@ let viewer = null;
 
 function show(name) {
   for (const s of sections) $(s).hidden = s !== name;
+  if (name !== "preview" && viewer) {
+    viewer.dispose(); // Release the WebGL context once the preview is gone.
+    viewer = null;
+  }
 }
 
 function sideColor(name) {
@@ -74,7 +78,6 @@ async function showPreview() {
   );
 
   await drawOverlay(file, preview);
-  if (viewer) viewer.dispose();
   viewer = createViewer($("view-3d"), preview);
 }
 
@@ -158,8 +161,10 @@ function createViewer(container, preview) {
   controls.target.set(0, 0.1, 0);
   controls.update();
 
-  let frame = 0;
-  const resize = () => {
+  // Draw on demand: when the view is resized (including when its tab is shown,
+  // since hidden views measure 0x0) and when the user orbits.
+  const render = () => renderer.render(scene, camera);
+  const observer = new ResizeObserver(() => {
     const { clientWidth: w, clientHeight: h } = container;
     if (w === 0 || h === 0) return;
     renderer.setSize(w, h, false);
@@ -167,22 +172,20 @@ function createViewer(container, preview) {
     renderer.domElement.style.height = "100%";
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-  };
-  // Size and draw only while the 3D tab is visible; hidden views measure 0x0.
-  const loop = () => {
-    frame = requestAnimationFrame(loop);
-    if (!container.hidden) {
-      resize();
-      renderer.render(scene, camera);
-    }
-  };
-  loop();
+    render();
+  });
+  observer.observe(container);
+  controls.addEventListener("change", render);
 
   return {
     dispose() {
-      cancelAnimationFrame(frame);
+      observer.disconnect();
       controls.dispose();
+      scene.traverse((object) => object.geometry?.dispose());
+      for (const m of Object.values(materials)) m.dispose();
       renderer.dispose();
+      renderer.forceContextLoss();
+      container.replaceChildren();
     },
   };
 }

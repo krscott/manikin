@@ -28,4 +28,4 @@ We rejected MediaPipe for four reasons:
   avoids both a `torch.hub` network fetch at load time and a second custom
   license.
 - The rest of the app depends only on the backend-neutral Pose type, so
-  replacing the backend means rewriting one function.
+  replacing the backend means replacing `SamBackend` and its MHR conversion.

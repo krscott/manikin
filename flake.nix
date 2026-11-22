@@ -42,17 +42,6 @@
         ++ pkgs.python3.pkgs.manikin.nativeBuildInputs
       );
 
-      mkApp = runtimeInputs: text: {
-        type = "app";
-        program = pkgs.lib.getExe (
-          pkgs.writeShellApplication {
-            name = "app";
-            runtimeInputs = runtimeInputs ++ [ pkgs.just ];
-            inherit text;
-          }
-        );
-      };
-
       # Formatting needs no runtime dependencies, so CI avoids downloading CUDA.
       pythonFormat = plainPkgs.python3.withPackages (ps: [
         ps.black
@@ -100,12 +89,15 @@
               ];
             };
             unit = nixos.config.systemd.units."manikin.service".unit;
+            config = nixos.config.environment.etc."manikin/config.toml".source;
             ports = nixos.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts;
           in
           assert ports == [ 9000 ];
           pkgs.runCommand "manikin-module-check" { } ''
-            grep -q 'ExecStart=.*/bin/manikin --config .*manikin.toml serve' ${unit}/manikin.service
+            grep -q 'ExecStart=.*/bin/manikin --config /etc/manikin/config.toml serve' ${unit}/manikin.service
             grep -q 'User=alice' ${unit}/manikin.service
+            grep -q 'RestartPreventExitStatus=2 3' ${unit}/manikin.service
+            grep -q 'port = 9000' ${config}
             touch "$out"
           '';
         nix-cli =
@@ -125,7 +117,6 @@
         nativeBuildInputs = [
           pythonDev
           pkgs.pyright
-          pkgs.nodejs # For missing libatomic in some environments
         ];
         packages = [ pkgs.python3.pkgs.venvShellHook ];
         venvDir = ".venv";
@@ -140,11 +131,19 @@
       };
 
       apps.${system} = {
-        format = mkApp [ pythonFormat ] "just format";
-        lint = mkApp [
-          pythonDev
-          pkgs.pyright
-        ] "just lint";
+        format = {
+          type = "app";
+          program = pkgs.lib.getExe (
+            pkgs.writeShellApplication {
+              name = "format";
+              runtimeInputs = [
+                pythonFormat
+                pkgs.just
+              ];
+              text = "just format";
+            }
+          );
+        };
       };
 
       formatter.${system} = pkgs.nixfmt;

@@ -41,8 +41,11 @@ def listen_from_status(status: dict[str, Any], *, port: int) -> Listen | Tailnet
     ipv4 = [ip for ip in ips if ":" not in ip]
     if not ipv4:
         return TailnetError("Tailscale reports no IPv4 address for this machine")
+    tailnet: dict[str, Any] = status.get("CurrentTailnet") or {}
+    # The MagicDNS name only resolves on the phone when MagicDNS is enabled.
     dns_name = str(me.get("DNSName") or "").rstrip(".")
-    return Listen(bind_host=ipv4[0], url=_url(dns_name or ipv4[0], port))
+    host = dns_name if tailnet.get("MagicDNSEnabled") and dns_name else ipv4[0]
+    return Listen(bind_host=ipv4[0], url=_url(host, port))
 
 
 def _tailscale_status() -> dict[str, Any] | TailnetError:

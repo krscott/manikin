@@ -29,10 +29,12 @@ The SAM 3D Body checkpoints are gated. Request access at
 pinned revision with a Hugging Face read token:
 
 ```sh
-nix shell nixpkgs#python3Packages.huggingface-hub -c env HF_TOKEN=hf_... \
+read -rs HF_TOKEN && export HF_TOKEN  # Paste the token; it stays out of history.
+nix shell nixpkgs#python3Packages.huggingface-hub -c \
   hf download facebook/sam-3d-body-vith \
   --revision f7f4ba4f67739e297f291639afb7c59041745367 \
   --local-dir ~/.local/share/manikin/models/sam-3d-body-vith
+unset HF_TOKEN
 ```
 
 The download is about 2.4 GB and is not needed again. manikin does not store
@@ -122,7 +124,10 @@ The service runs as `user`, so saved poses and model weights default to that
 user's home directory, where a Flatpak Blender can read them. It uses manikin's
 own package, built against manikin's locked nixpkgs, so CUDA PyTorch still comes
 from the binary cache. `settings` accepts the [configuration](#configuration)
-keys.
+keys. The module writes them to `/etc/manikin/config.toml` and adds `manikin`
+to the system `PATH`, so `manikin --config /etc/manikin/config.toml url` prints
+the service's URL and QR code. The service exits without restarting on bad
+settings or missing model weights; check `journalctl -u manikin`.
 
 ## Saved poses
 
@@ -132,8 +137,8 @@ Each accepted pose is a directory `<out_dir>/<YYYYMMDD-HHMMSS>[-<name>]/`:
 - `pose.json`: the pose.
 - `overlay.png`: the photo with the estimated skeleton.
 
-`pose.json` describes a character at rest facing -Y with +Z up and +X on the
-subject's left, in Blender's axes. The subject's left maps to Rigify's `.L`
+`pose.json` uses character space: the axes of a Blender character at rest,
+facing -Y with +Z up and +X on the subject's left. The subject's left maps to Rigify's `.L`
 bones. Each entry under `bones` has:
 
 - `direction`: the unit vector the bone points along.
@@ -142,7 +147,8 @@ bones. Each entry under `bones` has:
   bone's twist.
 
 The subject's yaw relative to the camera is removed; lean is kept, assuming the
-phone was held roughly level. `version` changes whenever the format changes.
+phone was held roughly level. `version` changes whenever the format changes
+incompatibly.
 
 ## Limitations
 

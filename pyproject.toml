@@ -23,7 +23,6 @@ dev = [
     "httpx",
     "isort",
     "mypy",
-    "pyright",
     "pytest",
 ]
 

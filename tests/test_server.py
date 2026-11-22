@@ -60,8 +60,12 @@ def upload(c: TestClient, data: bytes) -> dict[str, object]:
 
 def test_index_and_status(tmp_path: Path, sample_pose: Pose, clock: Clock) -> None:
     with client(FakeBackend(sample_pose), tmp_path, clock) as c:
-        assert "<title>manikin</title>" in c.get("/").text
-        assert c.get("/static/app.js").status_code == 200
+        index = c.get("/")
+        assert "<title>manikin</title>" in index.text
+        assert index.headers["cache-control"] == "no-store"
+        script = c.get("/static/app.js")
+        assert script.status_code == 200
+        assert script.headers["cache-control"] == "no-store"
         assert c.get("/api/status").json() == {"model_loaded": False}
 
 
@@ -116,3 +120,26 @@ def test_errors(tmp_path: Path, jpeg_bytes: bytes, clock: Clock) -> None:
         assert bad["status"] == 400 and "Unsupported" in str(bad["error"])
         missing = c.post("/api/poses", data={"other": "x"})
         assert missing.status_code == 400
+
+
+def test_failed_save_keeps_the_pose(
+    tmp_path: Path, sample_pose: Pose, jpeg_bytes: bytes, clock: Clock
+) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    with client(FakeBackend(sample_pose), blocker / "poses", clock) as c:
+        body = upload(c, jpeg_bytes)
+        for _ in range(2):  # Still pending after the first failure.
+            failed = c.post(f"/api/poses/{body['id']}/accept", json={})
+            assert failed.status_code == 500
+            assert "Cannot write to" in failed.json()["error"]
+
+
+def test_accept_rejects_invalid_json(
+    tmp_path: Path, sample_pose: Pose, jpeg_bytes: bytes, clock: Clock
+) -> None:
+    with client(FakeBackend(sample_pose), tmp_path, clock) as c:
+        body = upload(c, jpeg_bytes)
+        bad = c.post(f"/api/poses/{body['id']}/accept", content=b"{nope")
+        assert bad.status_code == 400
+        assert c.post(f"/api/poses/{body['id']}/accept").status_code == 200

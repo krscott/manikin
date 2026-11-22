@@ -1,8 +1,12 @@
 """Write a saved pose: the photo, pose.json, and an overlay image."""
 
+import errno
+import itertools
 import json
 import re
 import shutil
+import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -14,6 +18,11 @@ from manikin.pose import Pose, pose_file, preview_edges
 OVERLAY_MAX_SIZE = 1600
 
 
+@dataclass(frozen=True)
+class SaveError:
+    message: str
+
+
 def save_pose(
     *,
     out_dir: Path,
@@ -23,27 +32,27 @@ def save_pose(
     now: datetime,
     backend: str,
     manikin_version: str,
-) -> Path:
+) -> Path | SaveError:
     """Save into a new directory under `out_dir` and return its path.
 
     Files are written to a hidden temporary directory first, so a saved pose
     is either complete or absent.
     """
-    out_dir.mkdir(parents=True, exist_ok=True)
-    target = _unused_dir(out_dir, saved_pose_dir_name(name=name, now=now))
-    staging = out_dir / f".{target.name}.partial"
-    shutil.rmtree(staging, ignore_errors=True)
-    staging.mkdir()
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        staging = Path(tempfile.mkdtemp(dir=out_dir, prefix=".partial-"))
+    except OSError as e:
+        return SaveError(f"Cannot write to {out_dir}: {e.strerror or e}")
     try:
         (staging / f"photo.{photo.extension}").write_bytes(photo.data)
         document = pose_file(pose, backend=backend, manikin_version=manikin_version)
         (staging / "pose.json").write_text(json.dumps(document, indent=2) + "\n")
         overlay_image(photo.image, pose).save(staging / "overlay.png")
-        staging.rename(target)
-    except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
-        raise
-    return target
+        return _claim(staging, out_dir, saved_pose_dir_name(name=name, now=now))
+    except OSError as e:
+        return SaveError(f"Cannot save the pose in {out_dir}: {e.strerror or e}")
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)  # Gone after a successful claim.
 
 
 def saved_pose_dir_name(*, name: str, now: datetime) -> str:
@@ -86,10 +95,20 @@ def _side_color(name: str) -> str:
     return "#e5e7eb"
 
 
-def _unused_dir(out_dir: Path, name: str) -> Path:
-    candidate = out_dir / name
-    suffix = 2
-    while candidate.exists():
-        candidate = out_dir / f"{name}-{suffix}"
-        suffix += 1
-    return candidate
+def _claim(staging: Path, out_dir: Path, name: str) -> Path:
+    """Rename `staging` to `name`, or `name-2`, `name-3`, ... if that is taken.
+
+    Renaming onto an existing non-empty directory fails atomically, so
+    concurrent saves with the same name cannot overwrite each other.
+    """
+    for suffix in itertools.count(1):
+        target = out_dir / (name if suffix == 1 else f"{name}-{suffix}")
+        if target.exists():
+            continue  # Also skips empty directories, which rename would replace.
+        try:
+            staging.rename(target)
+            return target
+        except OSError as e:
+            if e.errno not in (errno.EEXIST, errno.ENOTEMPTY):
+                raise
+    raise AssertionError("unreachable")

@@ -4,10 +4,11 @@
 Install from Blender: Edit > Preferences > Add-ons > Install from Disk.
 Then select the generated rig and use File > Import > manikin pose (.json).
 
-Each pose bone stores a world-space direction and a twist reference for a
-character at rest facing -Y with +Z up. For every bone, the add-on builds the same
-frame from the rig's own rest pose, and rotates the matching FK control by the
-difference. The rig keeps its own proportions, rest pose, and bone roll.
+Each pose bone stores a direction and a twist reference in character space
+(+X the character's left, -Y forward, +Z up), read here as the rig's armature
+space. For every bone, the add-on builds the same frame from the rig's own rest
+pose, and rotates the matching FK control by the difference. The rig keeps its
+own proportions, rest pose, and bone roll.
 """
 
 import json

@@ -1,7 +1,8 @@
 """Backend-neutral pose description and the saved `pose.json` format.
 
-World coordinates follow Blender's convention for a character at rest:
-+X is the subject's left, -Y is the subject's forward, +Z is up. Units are meters.
+Positions and directions are in character space: the axes of a Blender character
+at rest, where +X is the subject's left, -Y is forward, and +Z is up. Units are
+meters.
 """
 
 from collections.abc import Mapping
@@ -149,7 +150,7 @@ CONNECTORS: tuple[tuple[Joint, Joint], ...] = (
 
 @dataclass(frozen=True, kw_only=True)
 class BoneFrame:
-    """A posed bone in world space.
+    """A posed bone in character space.
 
     `reference` is where the bone's reference axis (see `BoneSpec`) points after
     posing. It is a unit vector perpendicular to `direction`.

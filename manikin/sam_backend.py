@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 
 from manikin.mhr import (
     Array,
@@ -76,13 +77,19 @@ class SamBackend:
     def estimate(self, image: np.ndarray) -> Pose | EstimateError:
         """Estimate the pose of the person in an upright RGB image."""
         with self._lock:
-            if self._loaded is None:
-                loaded = self._load()
-                if isinstance(loaded, EstimateError):
-                    return loaded
-                self._loaded = loaded
             try:
+                if self._loaded is None:
+                    loaded = self._load()
+                    if isinstance(loaded, EstimateError):
+                        return loaded
+                    self._loaded = loaded
                 return _estimate(self._loaded, image)
+            except torch.OutOfMemoryError:
+                _free_gpu_memory()
+                return EstimateError(
+                    "Not enough free GPU memory (manikin needs about 4 GB). "
+                    "Close other GPU apps and try again."
+                )
             finally:
                 self._last_used = self._clock()
 
@@ -104,9 +111,6 @@ class SamBackend:
 
         log.info("Loading the pose model from %s", self._model_dir)
         start = time.monotonic()
-        # Imported here so other commands start without loading torch and CUDA.
-        import torch
-
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Upstream warns about optional deps.
             from sam_3d_body import SAM3DBodyEstimator, load_sam_3d_body
@@ -229,7 +233,5 @@ def _quiet() -> Generator[None]:
 
 
 def _free_gpu_memory() -> None:
-    import torch
-
     gc.collect()
     torch.cuda.empty_cache()

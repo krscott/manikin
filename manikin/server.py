@@ -14,11 +14,13 @@ from typing import Any, cast
 import anyio
 import numpy as np
 from starlette.applications import Starlette
-from starlette.datastructures import UploadFile
+from starlette.datastructures import MutableHeaders, UploadFile
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from manikin import __version__
 from manikin.photo import Photo, PhotoError, decode_photo
@@ -29,14 +31,14 @@ from manikin.pose import (
     out_of_frame_joints,
     preview_edges,
 )
-from manikin.saved_pose import save_pose
+from manikin.saved_pose import SaveError, save_pose
 
 log = logging.getLogger(__name__)
 
 STATIC_DIR = Path(str(files("manikin") / "static"))
 MAX_PHOTO_BYTES = 50 * 1024 * 1024
 PENDING_TTL = 30 * 60.0
-IDLE_CHECK_INTERVAL = 30.0
+HOUSEKEEPING_INTERVAL = 30.0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -69,7 +71,6 @@ def create_app(
         return JSONResponse({"model_loaded": backend.loaded})
 
     async def create_pose(request: Request) -> Response:
-        expire_pending()
         async with request.form(max_files=1, max_fields=0) as form:
             upload = form.get("photo")
             if not isinstance(upload, UploadFile):
@@ -94,7 +95,10 @@ def create_app(
     async def accept_pose(request: Request) -> Response:
         expire_pending()
         pose_id = request.path_params["pose_id"]
-        body: object = await request.json() if await request.body() else {}
+        try:
+            body: object = await request.json() if await request.body() else {}
+        except ValueError:
+            return _error(400, "The request body must be JSON")
         name = (
             cast(dict[str, object], body).get("name", "")
             if isinstance(body, dict)
@@ -117,6 +121,10 @@ def create_app(
                 manikin_version=__version__,
             )
         )
+        if isinstance(saved, SaveError):
+            pending[pose_id] = item  # Keep it so Accept can be retried.
+            log.error("%s", saved.message)
+            return _error(500, saved.message)
         log.info("Saved pose to %s", saved)
         return JSONResponse({"saved": saved.name})
 
@@ -124,10 +132,16 @@ def create_app(
         pending.pop(request.path_params["pose_id"], None)
         return Response(status_code=204)
 
+    async def housekeeping() -> None:
+        while True:
+            await anyio.sleep(HOUSEKEEPING_INTERVAL)
+            expire_pending()
+            await anyio.to_thread.run_sync(backend.unload_if_idle)
+
     @contextlib.asynccontextmanager
     async def lifespan(_: Starlette) -> AsyncGenerator[None]:
         async with anyio.create_task_group() as tasks:
-            tasks.start_soon(_unload_when_idle, backend)
+            tasks.start_soon(housekeeping)
             yield
             tasks.cancel_scope.cancel()
 
@@ -140,6 +154,9 @@ def create_app(
             Route("/api/poses/{pose_id}", discard_pose, methods=["DELETE"]),
             Mount("/static", StaticFiles(directory=STATIC_DIR), name="static"),
         ],
+        # Nix store files all have the same mtime, so Starlette's validators can't
+        # tell versions apart; never let the phone cache the page or its scripts.
+        middleware=[Middleware(_NoStore)],
         lifespan=lifespan,
     )
 
@@ -158,10 +175,17 @@ def preview_json(pose: Pose) -> dict[str, Any]:
     }
 
 
-async def _unload_when_idle(backend: PoseBackend) -> None:
-    while True:
-        await anyio.sleep(IDLE_CHECK_INTERVAL)
-        await anyio.to_thread.run_sync(backend.unload_if_idle)
+class _NoStore:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def send_no_store(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                MutableHeaders(scope=message)["Cache-Control"] = "no-store"
+            await send(message)
+
+        await self.app(scope, receive, send_no_store)
 
 
 def _error(status_code: int, message: str) -> Response:

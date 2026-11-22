@@ -45,7 +45,7 @@ buildPythonPackage {
     pytestCheckHook
   ];
 
-  # Skip integration tests during build (they require the installed executable)
+  # Integration tests need the installed executable; gpu and blender tests are manual.
   disabledTestMarks = [
     "integration"
     "gpu"

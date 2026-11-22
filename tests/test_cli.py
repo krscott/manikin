@@ -57,3 +57,28 @@ def test_config_error_exit_code(tmp_path: Path) -> None:
     )
     assert result.returncode == 2
     assert "Unknown setting(s)" in result.stderr
+
+
+def run_serve(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "manikin", "serve", "--host", "127.0.0.1", *args],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HOME": str(tmp_path)},
+    )
+
+
+def test_serve_unwritable_out_dir_is_a_config_error(tmp_path: Path) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    result = run_serve(tmp_path, "--out-dir", str(blocker / "poses"))
+    assert result.returncode == 2
+    assert "Cannot create out_dir" in result.stderr
+
+
+def test_serve_missing_weights_exit_code(tmp_path: Path) -> None:
+    result = run_serve(
+        tmp_path, "--out-dir", str(tmp_path / "poses"), "--model-dir", str(tmp_path)
+    )
+    assert result.returncode == 3
+    assert "hf download" in result.stderr
