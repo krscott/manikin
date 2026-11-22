@@ -79,7 +79,12 @@ class SamBackend:
         with self._lock:
             try:
                 result = self._load_and_estimate(image)
-            except torch.OutOfMemoryError:
+            except RuntimeError as e:
+                # CUDA context and cuBLAS failures report OOM as a plain RuntimeError.
+                if not isinstance(e, torch.OutOfMemoryError) and (
+                    "out of memory" not in str(e)
+                ):
+                    raise
                 result = None
             finally:
                 self._last_used = self._clock()

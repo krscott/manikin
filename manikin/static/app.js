@@ -219,7 +219,7 @@ async function accept() {
     });
     const body = await response.json().catch(() => ({}));
     if (response.status === 404) {
-      fail(body.error || "This pose has expired; take the photo again");
+      fail(body.error || "This pose is no longer waiting; take the photo again");
       return;
     }
     if (!response.ok) {

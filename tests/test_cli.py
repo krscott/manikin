@@ -68,14 +68,6 @@ def run_serve(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_serve_unwritable_out_dir_is_a_config_error(tmp_path: Path) -> None:
-    blocker = tmp_path / "file"
-    blocker.write_text("")
-    result = run_serve(tmp_path, "--out-dir", str(blocker / "poses"))
-    assert result.returncode == 2
-    assert "Cannot create out_dir" in result.stderr
-
-
 def test_serve_missing_weights_exit_code(tmp_path: Path) -> None:
     result = run_serve(
         tmp_path, "--out-dir", str(tmp_path / "poses"), "--model-dir", str(tmp_path)

@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 import sys
 from importlib.resources import files
 from pathlib import Path
@@ -17,6 +16,8 @@ BLENDER_SCRIPT = "manikin_rigify.py"
 
 # Exit codes. The NixOS service restarts only on EXIT_RETRY.
 EXIT_RETRY = 1  # Tailscale is not up yet.
+# out_dir is not checked here: it may be on a filesystem mounted after boot, and
+# Accept reports save errors with the path and keeps the pose for a retry.
 EXIT_CONFIG = 2  # Bad settings; argparse uses 2 for usage errors too.
 EXIT_SETUP = 3  # Model weights are missing.
 
@@ -33,10 +34,6 @@ def main() -> None:
 def serve(args: argparse.Namespace) -> int:
     config = _config(args)
     if config is None:
-        return EXIT_CONFIG
-    out_dir_error = _check_out_dir(config.out_dir)
-    if out_dir_error is not None:
-        print(out_dir_error, file=sys.stderr)
         return EXIT_CONFIG
 
     # Imported here so `url` and `blender-script` start without these modules.
@@ -107,17 +104,6 @@ def _config(args: argparse.Namespace) -> Config | None:
         print(config.message, file=sys.stderr)
         return None
     return config
-
-
-def _check_out_dir(out_dir: Path) -> str | None:
-    try:
-        out_dir.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        return f"Cannot create out_dir {out_dir}: {e.strerror or e}"
-    # Creating a saved pose's directory needs both write and search permission.
-    if not os.access(out_dir, os.W_OK | os.X_OK):
-        return f"out_dir {out_dir} is not writable"
-    return None
 
 
 def _listen(config: Config) -> Listen | None:

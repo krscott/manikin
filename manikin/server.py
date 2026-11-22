@@ -39,6 +39,10 @@ STATIC_DIR = Path(str(files("manikin") / "static"))
 MAX_PHOTO_BYTES = 50 * 1024 * 1024
 PENDING_TTL = 30 * 60.0
 HOUSEKEEPING_INTERVAL = 30.0
+MISSING_POSE = (
+    "This pose is no longer waiting: it was already saved, or it expired. "
+    "Take the photo again if it isn't in your poses folder."
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -113,20 +117,24 @@ def create_app(
         # Pop first so a repeated Accept cannot save the same pose twice.
         item = pending.pop(pose_id, None)
         if item is None:
-            return _error(404, "This pose has expired; take the photo again")
-        saved = await anyio.to_thread.run_sync(
-            lambda: save_pose(
-                out_dir=out_dir,
-                photo=item.photo,
-                pose=item.pose,
-                name=name,
-                now=now(),
-                backend=backend.name,
-                manikin_version=__version__,
+            return _error(404, MISSING_POSE)
+        try:
+            saved = await anyio.to_thread.run_sync(
+                lambda: save_pose(
+                    out_dir=out_dir,
+                    photo=item.photo,
+                    pose=item.pose,
+                    name=name,
+                    now=now(),
+                    backend=backend.name,
+                    manikin_version=__version__,
+                )
             )
-        )
-        if isinstance(saved, SaveError):
+        except BaseException:
             pending[pose_id] = item  # Keep it so Accept can be retried.
+            raise
+        if isinstance(saved, SaveError):
+            pending[pose_id] = item
             log.error("%s", saved.message)
             return _error(500, saved.message)
         log.info("Saved pose to %s", saved)
