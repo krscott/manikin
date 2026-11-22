@@ -4,7 +4,7 @@ default:
     just --list
 
 run *args:
-    pystart "$@"
+    manikin "$@"
 
 test *args:
     python -m pytest "$@"

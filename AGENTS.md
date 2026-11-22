@@ -1,6 +1,6 @@
-# Agent guide for py-start
+# Agent guide for manikin
 
-Code from the original py-start template may be removed as the project evolves.
+Code from the original manikin template may be removed as the project evolves.
 
 ## Development environment
 
@@ -87,5 +87,5 @@ The README's "Python compatibility" section explains how these settings are used
 
 ## Nix-packaged command
 
-The `-I` added to the `pystart` entry point in `default.nix` is deliberate. See
+The `-I` added to the `manikin` entry point in `default.nix` is deliberate. See
 "Nix command isolation" in the project README before changing it.

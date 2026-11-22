@@ -11,9 +11,9 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def nix_cli() -> Path:
-    executable = os.environ.get("PYSTART_NIX_EXECUTABLE")
+    executable = os.environ.get("MANIKIN_NIX_EXECUTABLE")
     if executable is None:
-        pytest.skip("Set PYSTART_NIX_EXECUTABLE to the installed Nix command")
+        pytest.skip("Set MANIKIN_NIX_EXECUTABLE to the installed Nix command")
     path = Path(executable)
     assert path.is_absolute() and path.is_file(), f"Invalid Nix executable: {path}"
     return path
@@ -23,7 +23,7 @@ def nix_cli() -> Path:
 def cli_env() -> dict[str, str]:
     env = os.environ.copy()
     for name in (
-        "PYSTART_VERBOSE",
+        "MANIKIN_VERBOSE",
         "PYTHONPATH",
         "PYTHONHOME",
         "PYTHON_DOTENV_DISABLED",
@@ -74,11 +74,11 @@ def test_application_settings(
     cli_env["PYTHONPATH"] = str(tmp_path)
     cli_env["PYTHONHOME"] = str(tmp_path / "missing-python")
     if settings in {"dotenv", "override"}:
-        (tmp_path / ".env").write_text("PYSTART_VERBOSE=1\n")
+        (tmp_path / ".env").write_text("MANIKIN_VERBOSE=1\n")
     if settings == "environment":
-        cli_env["PYSTART_VERBOSE"] = "1"
+        cli_env["MANIKIN_VERBOSE"] = "1"
     elif settings == "override":
-        cli_env["PYSTART_VERBOSE"] = "0"
+        cli_env["MANIKIN_VERBOSE"] = "0"
     result = subprocess.run(
         [str(nix_cli), "Alice"],
         cwd=tmp_path,

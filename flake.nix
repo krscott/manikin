@@ -28,7 +28,7 @@
           overlays = [ localOverlay ];
         };
 
-        pythonDev = pkgs.python3.pkgs.py-start.pythonModule.withPackages (
+        pythonDev = pkgs.python3.pkgs.manikin.pythonModule.withPackages (
           ps:
           with ps;
           [
@@ -37,8 +37,8 @@
             mypy
             pytest
           ]
-          ++ pkgs.py-start.propagatedBuildInputs
-          ++ pkgs.py-start.nativeBuildInputs
+          ++ pkgs.manikin.propagatedBuildInputs
+          ++ pkgs.manikin.nativeBuildInputs
         );
 
         mkApp = text: {
@@ -58,17 +58,17 @@
       in
       {
         packages = {
-          inherit (pkgs) py-start;
-          default = pkgs.py-start;
+          inherit (pkgs) manikin;
+          default = pkgs.manikin;
         };
 
         checks = {
           python-minimum = pkgs.python312.pkgs.callPackage ./default.nix { };
           nix-cli =
-            pkgs.runCommand "py-start-nix-cli-tests"
+            pkgs.runCommand "manikin-nix-cli-tests"
               {
                 nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pytest ])) ];
-                PYSTART_NIX_EXECUTABLE = "${pkgs.py-start}/bin/pystart";
+                MANIKIN_NIX_EXECUTABLE = "${pkgs.manikin}/bin/manikin";
               }
               ''
                 python -m pytest -c ${./pyproject.toml} ${./tests/test_nix_cli.py}
@@ -78,7 +78,7 @@
 
         devShells = {
           default = pkgs.mkShell {
-            inputsFrom = [ pkgs.py-start ];
+            inputsFrom = [ pkgs.manikin ];
             nativeBuildInputs = [
               pythonDev
               pkgs.pyright
