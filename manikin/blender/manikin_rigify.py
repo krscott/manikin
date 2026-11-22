@@ -98,10 +98,33 @@ def load_pose_file(path: Path) -> dict[str, Any]:
             f"manikin that saved it (version {document.get('manikin_version')}) "
             "and reinstall the add-on."
         )
-    missing = sorted(set(CONTROLS) - set(document.get("bones", {})))
+    bones = document.get("bones")
+    if not isinstance(bones, dict):
+        raise PoseError(f"{path} has no bones")
+    missing = sorted(set(CONTROLS) - set(bones))
     if missing:
         raise PoseError(f"{path} is missing bones: {', '.join(missing)}")
+    for bone in CONTROLS:
+        if not _valid_bone(bones[bone]):
+            raise PoseError(f"{path} has an invalid entry for bone {bone}")
     return document
+
+
+def _valid_bone(spec: Any) -> bool:
+    def vector(value: Any) -> bool:
+        return (
+            isinstance(value, list)
+            and len(value) == 3
+            and all(isinstance(v, (int, float)) and math.isfinite(v) for v in value)
+            and any(v != 0 for v in value)
+        )
+
+    return (
+        isinstance(spec, dict)
+        and vector(spec.get("direction"))
+        and vector(spec.get("reference"))
+        and spec.get("reference_axis") in _AXES
+    )
 
 
 def apply_pose(

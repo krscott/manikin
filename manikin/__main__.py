@@ -114,7 +114,8 @@ def _check_out_dir(out_dir: Path) -> str | None:
         out_dir.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         return f"Cannot create out_dir {out_dir}: {e.strerror or e}"
-    if not os.access(out_dir, os.W_OK):
+    # Creating a saved pose's directory needs both write and search permission.
+    if not os.access(out_dir, os.W_OK | os.X_OK):
         return f"out_dir {out_dir} is not writable"
     return None
 

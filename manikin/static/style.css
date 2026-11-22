@@ -175,3 +175,7 @@ section[hidden],
     transform: rotate(360deg);
   }
 }
+
+#accept-error:empty {
+  display: none;
+}

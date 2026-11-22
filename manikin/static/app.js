@@ -68,8 +68,10 @@ async function submit(file) {
 }
 
 async function showPreview() {
-  const { preview, file } = current;
+  const shown = current;
+  const { preview, file } = shown;
   show("preview");
+  $("accept-error").textContent = "";
   selectTab("photo");
 
   const warnings = $("warnings");
@@ -78,6 +80,7 @@ async function showPreview() {
   );
 
   await drawOverlay(file, preview);
+  if (current !== shown) return; // Retaken while the photo was decoding.
   viewer = createViewer($("view-3d"), preview);
 }
 
@@ -215,15 +218,20 @@ async function accept() {
       body: JSON.stringify({ name: $("pose-name").value.trim() }),
     });
     const body = await response.json().catch(() => ({}));
+    if (response.status === 404) {
+      fail(body.error || "This pose has expired; take the photo again");
+      return;
+    }
     if (!response.ok) {
-      fail(body.error || `Saving failed (${response.status})`);
+      // The server keeps the pose, so stay here and let the user retry.
+      $("accept-error").textContent = body.error || `Saving failed (${response.status})`;
       return;
     }
     current = null;
     $("saved-name").textContent = body.saved;
     show("saved");
   } catch (e) {
-    fail(`Could not reach manikin: ${e.message}`);
+    $("accept-error").textContent = `Could not reach manikin: ${e.message}`;
   } finally {
     button.disabled = false;
   }
