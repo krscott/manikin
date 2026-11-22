@@ -4,8 +4,8 @@ import errno
 import itertools
 import json
 import re
+import secrets
 import shutil
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -40,7 +40,9 @@ def save_pose(
     """
     try:
         out_dir.mkdir(parents=True, exist_ok=True)
-        staging = Path(tempfile.mkdtemp(dir=out_dir, prefix=".partial-"))
+        # A random hidden name; unlike tempfile.mkdtemp, mkdir honours the umask.
+        staging = out_dir / f".partial-{secrets.token_hex(8)}"
+        staging.mkdir()
     except OSError as e:
         return SaveError(f"Cannot write to {out_dir}: {e.strerror or e}")
     try:

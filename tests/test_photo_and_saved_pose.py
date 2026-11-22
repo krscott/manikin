@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -87,6 +88,9 @@ def test_save_pose(tmp_path: Path, sample_pose: Pose, jpeg_bytes: bytes) -> None
     assert json.loads((first / "pose.json").read_text())["backend"] == "test"
     assert Image.open(first / "overlay.png").size == (64, 48)
     assert not list((tmp_path / "poses").glob(".*"))
+    umask = os.umask(0)
+    os.umask(umask)
+    assert first.stat().st_mode & 0o777 == 0o777 & ~umask
 
 
 def test_save_error(tmp_path: Path, sample_pose: Pose, jpeg_bytes: bytes) -> None:

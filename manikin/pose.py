@@ -163,7 +163,7 @@ class BoneFrame:
 @dataclass(frozen=True, kw_only=True)
 class Pose:
     bones: Mapping[Bone, BoneFrame]
-    # World positions with the pelvis at the origin, for previews.
+    # Character-space positions with the pelvis at the origin, for previews.
     joints: Mapping[Joint, Vec3]
     # Pixel positions in the upright photo, for overlays.
     image_points: Mapping[Joint, Vec2]

@@ -49,8 +49,9 @@ nix run github:krscott/manikin -- serve
 
 manikin listens on this machine's tailnet IPv4 address and logs the URL to open
 on your phone, such as `http://myhost.example.ts.net:8471/`. `manikin url` prints
-the URL with a QR code. The firewall must allow the port on `tailscale0`; the
-[NixOS module](#nixos-module) can open it.
+the URL with a QR code. The firewall must allow the port on the Tailscale
+interface (`tailscale0` by default); the [NixOS module](#nixos-module) can
+open it.
 
 On the phone:
 
@@ -110,7 +111,7 @@ model_idle_timeout = 300
           services.manikin = {
             enable = true;
             user = "alice";
-            openFirewall = true; # Opens the port on tailscale0 only.
+            openFirewall = true; # Opens the port on the Tailscale interface only.
             settings.out_dir = "/home/alice/blender/poses";
           };
         }
@@ -138,8 +139,8 @@ Each accepted pose is a directory `<out_dir>/<YYYYMMDD-HHMMSS>[-<name>]/`:
 - `overlay.png`: the photo with the estimated skeleton.
 
 `pose.json` uses character space: the axes of a Blender character at rest,
-facing -Y with +Z up and +X on the subject's left. The subject's left maps to Rigify's `.L`
-bones. Each entry under `bones` has:
+facing -Y with +Z up and +X on the subject's left. The subject's left maps to
+Rigify's `.L` bones. Each entry under `bones` has:
 
 - `direction`: the unit vector the bone points along.
 - `reference`: where the bone's `reference_axis` (`forward`, the body's -Y, or

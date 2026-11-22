@@ -78,20 +78,28 @@ class SamBackend:
         """Estimate the pose of the person in an upright RGB image."""
         with self._lock:
             try:
-                if self._loaded is None:
-                    loaded = self._load()
-                    if isinstance(loaded, EstimateError):
-                        return loaded
-                    self._loaded = loaded
-                return _estimate(self._loaded, image)
+                result = self._load_and_estimate(image)
             except torch.OutOfMemoryError:
+                result = None
+            finally:
+                self._last_used = self._clock()
+            if result is None:
+                # Freed outside the except block, whose traceback would keep the
+                # failed frames' tensors alive.
                 _free_gpu_memory()
                 return EstimateError(
                     "Not enough free GPU memory (manikin needs about 4 GB). "
                     "Close other GPU apps and try again."
                 )
-            finally:
-                self._last_used = self._clock()
+            return result
+
+    def _load_and_estimate(self, image: np.ndarray) -> Pose | EstimateError:
+        if self._loaded is None:
+            loaded = self._load()
+            if isinstance(loaded, EstimateError):
+                return loaded
+            self._loaded = loaded
+        return _estimate(self._loaded, image)
 
     def unload_if_idle(self) -> bool:
         with self._lock:

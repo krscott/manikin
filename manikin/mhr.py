@@ -146,8 +146,8 @@ FRAME_SOURCES: Mapping[Bone, str] = {
 _UP = np.array([0.0, 1.0, 0.0])
 _FORWARD = np.array([0.0, 0.0, 1.0])
 
-# MHR frame -> Blender world: (x, y, z) -> (x, -z, y).
-_TO_BLENDER = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+# MHR frame -> character space: (x, y, z) -> (x, -z, y).
+_TO_CHARACTER = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -205,19 +205,19 @@ def pose_from_mhr(
         reference = _perpendicular(delta @ rest_reference, direction)
         bones[bone] = (direction, reference)
 
-    pelvis_forward = _TO_BLENDER @ bones[Bone.PELVIS][1]
-    to_world = _face_forward(pelvis_forward) @ _TO_BLENDER
+    pelvis_forward = _TO_CHARACTER @ bones[Bone.PELVIS][1]
+    to_character = _face_forward(pelvis_forward) @ _TO_CHARACTER
     pelvis = posed_joints[Joint.PELVIS]
     return Pose(
         bones={
             bone: BoneFrame(
-                direction=_vec3(to_world @ direction),
-                reference=_vec3(to_world @ reference),
+                direction=_vec3(to_character @ direction),
+                reference=_vec3(to_character @ reference),
             )
             for bone, (direction, reference) in bones.items()
         },
         joints={
-            joint: _vec3(to_world @ (position - pelvis))
+            joint: _vec3(to_character @ (position - pelvis))
             for joint, position in posed_joints.items()
         },
         image_points=image_points,
