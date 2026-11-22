@@ -209,8 +209,9 @@ async function discard() {
 }
 
 async function accept() {
-  const button = $("accept");
-  button.disabled = true;
+  // Retake is disabled too, so a slow save can't land on a newer preview.
+  const buttons = [$("accept"), $("retake")];
+  for (const b of buttons) b.disabled = true;
   try {
     const response = await fetch(`/api/poses/${current.id}/accept`, {
       method: "POST",
@@ -233,7 +234,7 @@ async function accept() {
   } catch (e) {
     $("accept-error").textContent = `Could not reach manikin: ${e.message}`;
   } finally {
-    button.disabled = false;
+    for (const b of buttons) b.disabled = false;
   }
 }
 

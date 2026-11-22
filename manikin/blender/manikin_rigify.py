@@ -111,19 +111,29 @@ def load_pose_file(path: Path) -> dict[str, Any]:
 
 
 def _valid_bone(spec: Any) -> bool:
+    def number(value: Any) -> bool:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return False
+        try:
+            return math.isfinite(value)
+        except OverflowError:  # An integer too large for a float.
+            return False
+
     def vector(value: Any) -> bool:
         return (
             isinstance(value, list)
             and len(value) == 3
-            and all(isinstance(v, (int, float)) and math.isfinite(v) for v in value)
+            and all(number(v) for v in value)
             and any(v != 0 for v in value)
         )
 
+    axis = spec.get("reference_axis") if isinstance(spec, dict) else None
     return (
         isinstance(spec, dict)
         and vector(spec.get("direction"))
         and vector(spec.get("reference"))
-        and spec.get("reference_axis") in _AXES
+        and isinstance(axis, str)
+        and axis in _AXES
     )
 
 
