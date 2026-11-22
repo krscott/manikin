@@ -204,8 +204,12 @@ class _Target:
 
     def __init__(self, rig: bpy.types.Object, bone: str, spec: dict[str, Any]):
         self.control, self.span = CONTROLS[bone]
-        direction = _vector(spec["direction"])
-        self.frame = _frame(direction, _vector(spec["reference"]))
+        self.frame = _frame(_vector(spec["direction"]), _vector(spec["reference"]))
+        # Catches values Blender's single-precision vectors turn into inf or 0,
+        # and a reference parallel to its direction.
+        finite = all(math.isfinite(v) for column in self.frame.col for v in column)
+        if not finite or abs(self.frame.determinant() - 1.0) > 1e-3:
+            raise PoseError(f"The pose has an unusable direction for bone {bone}")
         self.rest_direction = _rest_direction(rig, self.span)
         axis = _AXES[spec["reference_axis"]]
         self.rest_reference = _perpendicular(axis, self.rest_direction, bone=bone)

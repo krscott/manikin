@@ -77,6 +77,7 @@ class SamBackend:
     def estimate(self, image: np.ndarray) -> Pose | EstimateError:
         """Estimate the pose of the person in an upright RGB image."""
         with self._lock:
+            oom_detail = ""
             try:
                 result = self._load_and_estimate(image)
             except RuntimeError as e:
@@ -86,13 +87,14 @@ class SamBackend:
                 ):
                     raise
                 result = None
+                oom_detail = str(e)
             finally:
                 self._last_used = self._clock()
             if result is None:
                 # Freed outside the except block, whose traceback would keep the
                 # failed frames' tensors alive.
                 _free_gpu_memory()
-                log.warning("Out of GPU memory while estimating a pose")
+                log.warning("Out of GPU memory while estimating a pose: %s", oom_detail)
                 return EstimateError(
                     "Not enough free GPU memory (manikin needs about 4 GB). "
                     "Close other GPU apps and try again."
