@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Apply a pose saved by manikin to a Rigify-generated rig.
 
 Install from Blender: Edit > Preferences > Add-ons > Install from Disk.

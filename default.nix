@@ -57,5 +57,6 @@ buildPythonPackage {
   meta = {
     mainProgram = "manikin";
     description = "Capture a pose from a phone photo for a Blender Rigify rig";
+    license = lib.licenses.agpl3Plus;
   };
 }

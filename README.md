@@ -156,7 +156,8 @@ phone was held roughly level. `version` changes whenever the format changes.
 
 ## Licensing
 
-manikin's code has no license yet. Third-party parts:
+manikin is licensed under the GNU Affero General Public License v3.0 or later;
+see `LICENSE`. Third-party parts keep their own licenses:
 
 - SAM 3D Body code and checkpoints: [SAM License](https://github.com/facebookresearch/sam-3d-body/blob/main/LICENSE).
   It allows commercial use, places no restrictions on outputs, and prohibits
