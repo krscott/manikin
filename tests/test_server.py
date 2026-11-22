@@ -6,7 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from manikin.pose import EstimateError, Pose
-from manikin.server import PENDING_TTL, create_app
+from manikin.server import MAX_PHOTO_BYTES, PENDING_TTL, create_app
 
 
 class FakeBackend:
@@ -143,3 +143,17 @@ def test_accept_rejects_invalid_json(
         bad = c.post(f"/api/poses/{body['id']}/accept", content=b"{nope")
         assert bad.status_code == 400
         assert c.post(f"/api/poses/{body['id']}/accept").status_code == 200
+
+
+def test_oversized_upload_rejected_by_length(
+    tmp_path: Path, sample_pose: Pose, clock: Clock
+) -> None:
+    backend = FakeBackend(sample_pose)
+    with client(backend, tmp_path, clock) as c:
+        response = c.post(
+            "/api/poses",
+            content=b"x",
+            headers={"content-length": str(MAX_PHOTO_BYTES * 2)},
+        )
+        assert response.status_code == 413
+        assert backend.images == []

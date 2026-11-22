@@ -71,6 +71,10 @@ def create_app(
         return JSONResponse({"model_loaded": backend.loaded})
 
     async def create_pose(request: Request) -> Response:
+        # Reject oversized uploads before Starlette spools them to disk.
+        length = request.headers.get("content-length", "")
+        if length.isdigit() and int(length) > MAX_PHOTO_BYTES + 64 * 1024:
+            return _error(413, "The photo is larger than 50 MB")
         async with request.form(max_files=1, max_fields=0) as form:
             upload = form.get("photo")
             if not isinstance(upload, UploadFile):
