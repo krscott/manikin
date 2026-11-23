@@ -171,8 +171,9 @@ that permission. Third-party parts keep their own licenses:
 
 - SAM 3D Body code and checkpoints: [SAM License](https://github.com/facebookresearch/sam-3d-body/blob/main/LICENSE).
   It allows commercial use and places no restrictions on outputs, but research
-  publications must acknowledge SAM. It prohibits uses related to weapons,
-  military, and ITAR among others. Read it before use. Meta may change it.
+  publications must acknowledge SAM. It forbids activities subject to ITAR and
+  end uses prohibited by trade controls, such as military, nuclear, espionage,
+  or gun and illegal-weapon uses. Read it before use. Meta may change it.
   Include the copy of the SAM License that came with any SAM code or
   checkpoints, or derivatives of them, that you redistribute.
 - The Momentum Human Rig (MHR) model in the checkpoint: Apache 2.0.

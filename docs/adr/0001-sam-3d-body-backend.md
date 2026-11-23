@@ -19,8 +19,9 @@ We rejected MediaPipe for four reasons:
 ## Consequences
 
 - The checkpoints are under the SAM License. It allows commercial use of
-  outputs but prohibits uses related to weapons, military and ITAR, and Meta
-  can change it unilaterally. The project owner reviewed and accepted these
+  outputs but forbids activities subject to ITAR and end uses prohibited by
+  trade controls (such as military, nuclear, espionage, or gun and
+  illegal-weapon uses), and Meta can change it unilaterally. The project owner reviewed and accepted these
   terms.
 - The checkpoints are gated on Hugging Face and approved manually, so they
   live outside the Nix store and are downloaded by hand.
