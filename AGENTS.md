@@ -35,9 +35,12 @@ Declare dependencies before installing them:
    refresh package metadata or script entry points in an existing `.venv`, run
    `python -m pip install --no-deps --no-build-isolation -e .` in that shell.
 
-`LICENSE-EXCEPTION` lets manikin be conveyed with SAM 3D Body only. Ask the
-owner before adding a dependency under a non-free or GPL-incompatible license,
-and do not copy sam-3d-body code into manikin: it stays under the SAM License.
+`SAM-EXCEPTION` covers combining manikin only with SAM 3D Body code and
+checkpoints. Ask the owner before adding any dependency, model, or runtime
+download (such as `torch.hub`) under a non-free or GPL-incompatible license;
+this includes switching checkpoints (the DINOv3 checkpoint fetches
+DINOv3-licensed code). Do not copy sam-3d-body code into manikin: it stays under
+the SAM License.
 
 For libraries without type hints, add available stub packages to development
 dependencies. If stubs are unavailable, use a mypy override scoped to the

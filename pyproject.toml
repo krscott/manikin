@@ -3,7 +3,7 @@ name = "manikin"
 version = "0.1.0"
 requires-python = ">=3.13"
 license = "AGPL-3.0-or-later"
-license-files = ["LICENSE", "LICENSE-EXCEPTION"]
+license-files = ["LICENSE", "SAM-EXCEPTION"]
 
 dependencies = [
     "numpy>=2.5",

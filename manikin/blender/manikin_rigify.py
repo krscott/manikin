@@ -1,3 +1,4 @@
+# Copyright (C) 2026 Kris Scott
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Apply a pose saved by manikin to a Rigify-generated rig.
 
