@@ -1,9 +1,16 @@
+manikin
+Copyright (C) 2026 Kris Scott
+
+manikin is licensed under the GNU Affero General Public License version 3 or
+later (see LICENSE), with the following additional permission.
+
 Additional permission under GNU AGPL version 3 section 7
 
 If you modify this Program, or any covered work, by linking or combining it
-with SAM 3D Body, including its model checkpoints (or a modified version of
-that library), containing parts covered by the terms of the SAM License, the
-licensors of this Program grant you additional permission to convey the
-resulting work. Corresponding Source for a non-source form of such a
-combination shall include the source code for the parts of SAM 3D Body used as
-well as that of the covered work.
+with SAM 3D Body (https://github.com/facebookresearch/sam-3d-body) or its model
+checkpoints (or modified versions of them), containing parts covered by the
+terms of the SAM License or a later version of it, the licensors of this
+Program grant you additional permission to convey the resulting work.
+Corresponding Source for a non-source form of such a combination shall include
+the source code for the parts of the SAM 3D Body software used (not its model
+checkpoints) as well as that of the covered work.
