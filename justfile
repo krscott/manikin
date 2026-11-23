@@ -4,10 +4,27 @@ default:
     just --list
 
 run *args:
-    pystart "$@"
+    manikin "$@"
 
 test *args:
     python -m pytest "$@"
+
+# Manual: run the pose backend on the GPU (needs the model weights).
+test-gpu *args:
+    python -m pytest -m gpu "$@"
+
+# Manual: apply a pose with the Blender add-on in headless Blender.
+test-blender *args:
+    MANIKIN_BLENDER="$(nix build --no-link --print-out-paths --inputs-from . nixpkgs#blender)/bin/blender" \
+        python -m pytest -m blender "$@"
+
+# Rewrite tests/data/kungfu.pose.json from the GPU backend.
+regenerate-pose-fixture:
+    MANIKIN_UPDATE_FIXTURES=1 python -m pytest -m gpu tests/test_gpu.py
+
+# Check that the locked CUDA torch builds are on cache.nixos-cuda.org.
+check-cuda-cache:
+    scripts/check-cuda-cache.sh
 
 lint:
     python -m mypy .
