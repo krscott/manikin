@@ -173,8 +173,8 @@ that permission. Third-party parts keep their own licenses:
   It allows commercial use, places no restrictions on outputs (research
   publications must acknowledge SAM), and prohibits
   uses related to weapons, military, and ITAR among others. Read it before use.
-  Meta may change it. Include it with any SAM code or checkpoints you
-  redistribute.
+  Meta may change it. Include a copy of the applicable SAM License with any SAM
+  code or checkpoints, or derivatives of them, that you redistribute.
 - The Momentum Human Rig (MHR) model in the checkpoint: Apache 2.0.
 - three.js, vendored in `manikin/static/vendor/three`: MIT.
 - `tests/data/kungfu.jpg`: CC0; see `tests/data/README.md`.
