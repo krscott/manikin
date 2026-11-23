@@ -164,7 +164,9 @@ incompatibly.
 ## Licensing
 
 manikin is licensed under the GNU Affero General Public License v3.0 or later;
-see `LICENSE`. Third-party parts keep their own licenses:
+see `LICENSE`. Because the SAM License is not a free software license,
+`LICENSE-EXCEPTION` adds permission to combine manikin with SAM 3D Body and
+convey the result. Third-party parts keep their own licenses:
 
 - SAM 3D Body code and checkpoints: [SAM License](https://github.com/facebookresearch/sam-3d-body/blob/main/LICENSE).
   It allows commercial use, places no restrictions on outputs, and prohibits
