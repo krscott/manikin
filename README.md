@@ -172,7 +172,8 @@ that permission. Third-party parts keep their own licenses:
 - SAM 3D Body code and checkpoints: [SAM License](https://github.com/facebookresearch/sam-3d-body/blob/main/LICENSE).
   It allows commercial use, places no restrictions on outputs, and prohibits
   uses related to weapons, military, and ITAR among others. Read it before use.
-  Meta may change it.
+  Meta may change it. Include it with any SAM code or checkpoints you
+  redistribute.
 - The Momentum Human Rig (MHR) model in the checkpoint: Apache 2.0.
 - three.js, vendored in `manikin/static/vendor/three`: MIT.
 - `tests/data/kungfu.jpg`: CC0; see `tests/data/README.md`.
